@@ -1,0 +1,191 @@
+import numpy as np
+import matplotlib.pyplot as plt
+from matplotlib.animation import FuncAnimation
+import math
+from Djikstra import *
+from numpy import ones,vstack
+from numpy.linalg import lstsq
+from sympy import symbols, Eq, solve
+
+fig, ax = plt.subplots(1, 1)
+fig.set_size_inches(5,5)
+
+h = 0.1
+v = 30
+Ws = 0.1
+L = 2.46
+t = 5
+points = []
+
+
+class car_simulation:
+    def __init__(self):
+        self.x = 0
+        self.y = 0
+        self.theta = 0
+        self.phi = 0
+
+    def coord_computation(self):
+        self.x = self.x + h * math.cos(self.theta) * v
+        self.y = self.y + h * math.sin(self.theta) * v
+        self.theta = self.theta + (h * math.tan(self.phi) * v)/L
+        if self.phi > math.pi/4:
+            self.phi = math.pi/4
+        else:
+            self.phi = self.phi + h * Ws
+        return self.x, self.y, self.theta, self.phi
+
+
+
+
+class path_planning:
+    def __init__(self, starting_pt, finishing_pt):
+        self.map = [(30, 10), (20, 30), (10, 40), (30, 30), (40, 20)]
+        self.g = Graph(5)
+        self.g.graph = [[0, 4, 0, 2, 1],
+                       [4, 0, 2, 1, 0],
+                       [0, 2, 0, 0, 0],
+                       [2, 1, 0, 0, 2],
+                       [1, 0, 0, 2, 0]]
+        self.road = []
+        self.completed_road = []
+        self.angles = []
+        self.equations = []
+
+        path = np.array(self.g.dijkstra(starting_pt, finishing_pt))
+
+        for i in range(len(path)):
+            self.road.append(self.map[path[i]])
+        #np.array(self.road)
+
+        print("road point", self.road)
+        self.angles_computation()
+
+        self.complete_road()
+
+    def angles_computation(self):
+        for i in range(len(self.road)-2):
+            vector1_x = self.road[i+1][0] - self.road[i][0]
+            vector1_y = self.road[i + 1][1] - self.road[i][1]
+            vector2_x = self.road[i+2][0] - self.road[i+1][0]
+            vector2_y = self.road[i + 2][1] - self.road[i + 1][1]
+            vector1 = [vector1_x, vector1_y]
+            vector2 = [vector2_x, vector2_y]
+
+            theta = math.pi-math.acos((vector1[0]*vector2[0]+vector1[1]*vector2[1])/(math.sqrt(vector1[0]**2+vector1[1]**2)*math.sqrt(vector2[0]**2+vector2[1]**2)))
+            theta = theta * 180/math.pi
+            self.angles.append(round(theta,2))
+        print("self.angles",self.angles)
+
+    def complete_road(self):
+        #initialization of the final road
+        A = self.road[0]
+        self.completed_road.append(A)
+        B = self.road[1]
+        # 20m = max distance for a turn
+        dist_newpoint_B = 20-0.1 * self.angles[0]
+        newpoint = self.computation_position_newpoint(A, B, dist_newpoint_B)
+        self.completed_road.append(newpoint)
+        self.completed_road.append(B)
+
+        A = self.road[2]
+        dist_newpoint_B = 20-0.1 * self.angles[0]
+        newpoint = self.computation_position_newpoint(A, B, dist_newpoint_B)
+        self.completed_road.append(newpoint)
+
+        for i in range(1, len(self.angles)):
+            for j in range(2):
+                if j == 0:
+                    A = self.road[i]
+                    B = self.road[i+1]
+
+                if j == 1:
+                    A = self.road[i+2]
+                    B = self.road[i+1]
+                    self.completed_road.append(B)
+
+                dist_newpoint_B = 20-0.1 * self.angles[i]
+                newpoint = self.computation_position_newpoint(A, B, dist_newpoint_B)
+                self.completed_road.append(newpoint)
+
+        #final points
+        self.completed_road.append(self.road[-1])
+        print("completed road point", self.completed_road)
+
+
+    def computation_position_newpoint(self, A, B, dist_newpoint_B):
+        equation_line = self.parametrization_computation(A, B)
+        m_x, m_y, p_x, p_y = equation_line
+
+        t = symbols(' t ')
+        eq1 = Eq((B[0] - (m_x * t + p_x)) ** 2 + (B[1] - (m_y * t + p_y)) ** 2 - dist_newpoint_B ** 2, 0)
+        sol = solve(eq1)
+
+        if sol[0] <= 1:
+            solution = sol[0]
+        else:
+            solution = sol[1]
+
+        newpoint = (m_x * round(solution, 2) + p_x, m_y * round(solution, 2) + p_y)
+        return newpoint
+
+
+
+
+
+
+
+
+
+
+
+
+    #def equations_computation(self):
+     #   for i in range(len(self.road) + len(self.angles) - 1):
+
+    def parametrization_computation(self, point1, point2):
+        m_x = point2[0] - point1[0]
+        m_y = point2[1] - point1[1]
+        p_x = point1[0]
+        p_y = point1[1]
+
+        return m_x, m_y, p_x, p_y
+
+
+
+
+
+
+
+
+
+def animate(i):
+    ax.clear()
+    # Plot that point using the x and y coordinates
+    point = points[i]
+    ax.plot(point[0], point[1], color='green',
+            label='original', marker='o')
+    # Set the x and y axis to display a fixed range
+    ax.set_xlim([0, 5])
+    ax.set_ylim([0, 5])
+
+
+def main():
+    car = car_simulation()
+
+    #for i in range(int(t/h)):
+        #x, y, theta, phi = car.coord_computation()
+        #point = [x, y]
+        #points.append(point)
+
+    route = path_planning(0, 2)
+    #points = route.road
+
+    #ani = FuncAnimation(fig, animate, frames=5, interval=500, repeat=False)
+
+
+
+    #plt.show()
+
+
+main()
