@@ -18,7 +18,7 @@ ref_traj = np.stack((np.arange(0, 50, 1), np.ones((50)) * 10), axis = -1)
 def main_loop(robot):
     for i in range(int(t/h)):
         robot.kinematics(h)
-        robot.find_ref_point(ref_traj)
+        robot.find_initial_ref_point(ref_traj)
         robot.control_param(h)
         robot.set_new_param()
         points.append((robot.x,robot.y,robot.theta, robot.x_ref,robot.y_ref))
