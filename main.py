@@ -9,10 +9,10 @@ from matplotlib.animation import FuncAnimation
 class Robot:
     def __init__(self, h):
         self.x = 0 #Meters
-        self.y = 3 #Meters
-        self.theta = 0 #Rad
+        self.y = 10 #Meters
+        self.theta = pi/4 #Rad
         self.phi = 0  #Rad
-        self.v = 5 #Meters/s
+        self.v = 20 #Meters/s
         self.L = 2.46 # Meters
         self.omega = 0
         self.omega_s = 0
@@ -22,22 +22,32 @@ class Robot:
         self.phi_ = 0
         # Reference points
 
-        self.x_ref = 40
-        self.y_ref = 40
+        self.x_ref = 0
+        self.y_ref = 10
         self.theta_ref = 0
+        self.ref_point_counter = 0
+        self.dist_from_ref_point = 0l
         # Control variables
 
         self.b_e = 0
         self.b_e_ = 0
+        self.b_e_int = 0
 
+        Ku = 1
+        iter = 218 #iterations for a perdiod
+        Tu = iter*h #period
 
-        self.K_v = 3
-        self.K_s = 100
-        self.K_l = 20
+        self.K_x = 0
+        self.K_y = 0
+        self.K_theta = 0
 
-        self.K_v_ = 1
-        self.K_s_ = 1
-        self.K_l_ = 1
+        self.K_x_ = 0
+        self.K_y_ = 0
+        self.K_theta_ = 0
+
+        self.K_x_int = 0
+        self.K_y_int = 0
+        self.K_theta_int = 0
 
     def kinematics(self, h):
         self.x = self.x + h * cos(self.theta) * self.v
@@ -54,6 +64,12 @@ class Robot:
         min_point = np.argmin(distance_list)
         self.x_ref = ref_point_traj[min_point][0]
         self.y_ref = ref_point_traj[min_point][1]
+
+        """if distance_list[min_point] < 2 :
+            min_point += 3
+            min_point = min(min_point, len(distance_list)-1)
+            self.x_ref = ref_point_traj[min_point][0]
+            self.y_ref = ref_point_traj[min_point][1]"""
 
         """derivs = np.array([self.x_, self.y_, self.theta_, self.phi_])
         A = np.array([cos(self.theta),      0],
@@ -75,10 +91,12 @@ class Robot:
         past_be = self.b_e
         self.b_e = np.dot(A,w_e)
         self.b_e_ = (self.b_e - past_be)/h
+        self.b_e_int += self.b_e
 
     def set_new_param(self):
-        self.v = self.K_v * self.b_e[0]
-        self.phi_ = self.K_s * self.b_e[2] + self.K_l*self.b_e[1] # - self.K_l_ * self.b_e_[1]
+        self.v = self.K_x * self.b_e[0] + self.K_y * self.b_e[1]
+        self.phi_ = self.K_theta * self.b_e[2] + self.K_y_int * self.b_e_int[1] + self.K_x_int * self.b_e_int[0] + self.K_theta_ * self.b_e_[2]
+
 
 def sign(x):
     if x > 0:
