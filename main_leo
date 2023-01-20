@@ -1,10 +1,6 @@
 import numpy as np
 import matplotlib.pyplot as plt
-from matplotlib.animation import FuncAnimation
 import math
-from Djikstra import *
-from numpy import ones,vstack
-from numpy.linalg import lstsq
 from sympy import symbols, Eq, solve
 
 fig, ax = plt.subplots(1, 1)
@@ -40,28 +36,43 @@ class car_simulation:
 
 class path_planning:
     def __init__(self, starting_pt, finishing_pt):
-        self.map = [(30, 10), (20, 30), (10, 40), (30, 30), (40, 20)]
-        self.g = Graph(5)
-        self.g.graph = [[0, 4, 0, 2, 1],
-                       [4, 0, 2, 1, 0],
-                       [0, 2, 0, 0, 0],
-                       [2, 1, 0, 0, 2],
-                       [1, 0, 0, 2, 0]]
+        self.map = [(10, 10), (30, 10), (50, 10), (10, 30), (30, 30), (10, 50), (100, 30)]
+        #self.g = Graph(5)
+        #self.g.graph = [[0, 0, 0, 20, 0, 0, 0],
+                        #[0, 0, 20, 0, 15, 0, 0],
+                        #[0, 20, 0, 0, 0, 0, 0],
+                        #[20, 0, 0, 0, 12, 80, 0],
+                        #[0, 15, 0, 12, 0, 0, 30],
+                        #[0, 0, 0, 80, 0, 0, 40],
+                        #[0, 0, 0, 0, 30, 40, 0]]
         self.road = []
         self.completed_road = []
         self.angles = []
         self.equations = []
+        self.type_equation = []  #0 if straight, 1 if corner
+        self.final_trajectory = []
 
-        path = np.array(self.g.dijkstra(starting_pt, finishing_pt))
+        #path = np.array(self.g.dijkstra(starting_pt, finishing_pt))
+        path = np.array(self.djikstra_algo(starting_pt, finishing_pt))
 
         for i in range(len(path)):
             self.road.append(self.map[path[i]])
-        #np.array(self.road)
 
-        print("road point", self.road)
         self.angles_computation()
-
         self.complete_road()
+        self.final_trajectory = self.final_list_calculator()
+
+    def initial_graph(self):
+
+        return {
+            '0': {'3': 30},
+            '1': {'2': 20, '4': 30},
+            '2': {'1': 20},
+            '3': {'0': 30, '4': 20, '5': 80},
+            '4': {'1': 30, '3': 20, '6': 40},
+            '5': {'3': 80, '6': 40},
+            '6': {'5': 40, '4': 40}
+        }
 
     def angles_computation(self):
         for i in range(len(self.road)-2):
@@ -75,7 +86,7 @@ class path_planning:
             theta = math.pi-math.acos((vector1[0]*vector2[0]+vector1[1]*vector2[1])/(math.sqrt(vector1[0]**2+vector1[1]**2)*math.sqrt(vector2[0]**2+vector2[1]**2)))
             theta = theta * 180/math.pi
             self.angles.append(round(theta,2))
-        print("self.angles",self.angles)
+        print("self.angles", self.angles)
 
     def complete_road(self):
         #initialization of the final road
@@ -86,31 +97,72 @@ class path_planning:
         dist_newpoint_B = 20-0.1 * self.angles[0]
         newpoint = self.computation_position_newpoint(A, B, dist_newpoint_B)
         self.completed_road.append(newpoint)
-        self.completed_road.append(B)
+        self.completed_road.append(B)  # we will need the corner point later
+        print("temporaire", self.completed_road)
+        self.type_equation.append(0)
 
         A = self.road[2]
         dist_newpoint_B = 20-0.1 * self.angles[0]
         newpoint = self.computation_position_newpoint(A, B, dist_newpoint_B)
         self.completed_road.append(newpoint)
+        print("self.completed_road debut", self.completed_road)
+        self.type_equation.append(1)
 
         for i in range(1, len(self.angles)):
             for j in range(2):
                 if j == 0:
+                    #entry in the corner
                     A = self.road[i]
                     B = self.road[i+1]
 
                 if j == 1:
+                    #exit of the corner
                     A = self.road[i+2]
                     B = self.road[i+1]
-                    self.completed_road.append(B)
+                    self.completed_road.append(B) #we will need the corner point later
 
-                dist_newpoint_B = 20-0.1 * self.angles[i]
+                dist_newpoint_B = 20 - 0.1 * self.angles[i]
                 newpoint = self.computation_position_newpoint(A, B, dist_newpoint_B)
-                self.completed_road.append(newpoint)
 
+                if j == 0 and math.dist(A, newpoint) < math.dist(A, self.completed_road[-1]):
+                    #if the new point is before the last one, we replace both of them by the average point
+                    #meaning 2 corners are too close
+                    print("if", "i", i)
+                    last_point = self.completed_road[-1]
+                    self.completed_road.pop()
+                    d_first_corner = math.dist(newpoint, A) + math.dist(newpoint, last_point)/2
+                    last_point = self.computation_position_newpoint(B, A, d_first_corner)
+                    self.completed_road.append(last_point)
+
+                    #the point before needs also to be replaced to be at the same distance
+                    temporary_A = self.road[i-1]
+                    temporary_B = self.road[i]
+                    self.completed_road[-3] = self.computation_position_newpoint(temporary_A, temporary_B, d_first_corner)
+                    print("bite1", self.completed_road)
+
+                    #the point after is set now, ++j because we don't need to do the exit of the corner anymore
+                    future_A = self.road[i+2]
+                    future_B = self.road[i+1]
+                    d_second_corner = math.dist(A, B) - d_first_corner
+                    self.completed_road.append(future_B)  # we will need the corner point later
+                    self.completed_road.append(self.computation_position_newpoint(future_A, future_B, d_second_corner))
+                    print("bite2", self.completed_road)
+                    self.type_equation.append(1)
+                    break
+
+                else:
+                    self.completed_road.append(newpoint)
+                    if j == 0:
+                        self.type_equation.append(0)
+                    else:
+                        self.type_equation.append(1)
+
+        self.type_equation.append(0)
         #final points
         self.completed_road.append(self.road[-1])
+        self.completed_road = [[int(i) for i in sublist] for sublist in self.completed_road]
         print("completed road point", self.completed_road)
+        print("type roads", self.type_equation)
 
 
     def computation_position_newpoint(self, A, B, dist_newpoint_B):
@@ -130,18 +182,48 @@ class path_planning:
         return newpoint
 
 
+    def djikstra_algo(self, starting_point, finishing_point):
+        starting_point = str(starting_point)
+        finishing_point = str(finishing_point)
+        path = {}
+        adj_node = {}
+        queue = []
+        final_path = []
+        graph = self.initial_graph()
 
+        for node in graph:
+            path[node] = float("inf")
+            adj_node[node] = None
+            queue.append(node)
 
+        path[starting_point] = 0
+        while queue:
+            # find min distance which wasn't marked as current
+            key_min = queue[0]
+            min_val = path[key_min]
+            for n in range(1, len(queue)):
+                if path[queue[n]] < min_val:
+                    key_min = queue[n]
+                    min_val = path[key_min]
+            cur = key_min
+            queue.remove(cur)
 
+            for i in graph[cur]:
+                alternate = graph[cur][i] + path[cur]
+                if path[i] > alternate:
+                    path[i] = alternate
+                    adj_node[i] = cur
 
+        x = finishing_point
+        final_path.append(x)
+        while True:
+            x = adj_node[x]
+            if x is None:
+                break
+            final_path.insert(0, x)
 
-
-
-
-
-
-    #def equations_computation(self):
-     #   for i in range(len(self.road) + len(self.angles) - 1):
+        print("roadbite", final_path)
+        return [int(x) for x in final_path]
 
     def parametrization_computation(self, point1, point2):
         m_x = point2[0] - point1[0]
@@ -150,6 +232,50 @@ class path_planning:
         p_y = point1[1]
 
         return m_x, m_y, p_x, p_y
+
+    def corner_equation(self, point1, point2, point3, t):
+        # system of equations
+        A = np.array([[point1[0] - point3[0], point1[1] - point3[1]], [point2[0] - point3[0], point2[1] - point3[1]]])
+        b = np.array([[point1[0] ** 2 + point1[1] ** 2 - point1[0] * point3[0] - point1[1] * point3[1]],
+                      [point2[0] ** 2 + point2[1] ** 2 - point2[0] * point3[0] - point2[1] * point3[1]]])
+        sol = np.linalg.solve(A, b)
+
+        print("x0 ", sol[0], "y0", sol[1])
+        r = math.dist(sol, point1) #sortir les valeurs calculées
+
+        x = sol[0] + r*math.cos(t)
+        y = sol[1] + r*math.sin(t)
+
+        print("x ", x, "y ", y)
+
+        return x, y
+
+    def final_list_calculator(self):
+        final_list = []
+        final_list.append(self.completed_road[0])
+
+        for i in range(len(self.type_equation)):
+            if self.type_equation[i] == 0:
+                final_list.append(self.completed_road[i+1])
+            elif self.type_equation[i] == 1:
+                for j in range (0, 11):
+                    t = j/10
+                    point = []
+                    print("t", t)
+                    print("point1 ", self.completed_road[i], " point2 ", self.completed_road[i + 2], " point3 ", self.completed_road[i + 1])
+                    x, y = self.corner_equation(self.completed_road[i], self.completed_road[i + 2], self.completed_road[i + 1], t)
+                    point.append(x)
+                    point.append(y)
+                    final_list.append(point)
+
+            print("final list ", final_list)
+        return final_list
+
+
+
+
+
+
 
 
 
@@ -178,7 +304,7 @@ def main():
         #point = [x, y]
         #points.append(point)
 
-    route = path_planning(0, 2)
+    route = path_planning(2, 5)
     #points = route.road
 
     #ani = FuncAnimation(fig, animate, frames=5, interval=500, repeat=False)
@@ -189,3 +315,9 @@ def main():
 
 
 main()
+
+
+
+
+
+
