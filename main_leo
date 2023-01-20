@@ -98,14 +98,12 @@ class path_planning:
         newpoint = self.computation_position_newpoint(A, B, dist_newpoint_B)
         self.completed_road.append(newpoint)
         self.completed_road.append(B)  # we will need the corner point later
-        print("temporaire", self.completed_road)
         self.type_equation.append(0)
 
         A = self.road[2]
         dist_newpoint_B = 20-0.1 * self.angles[0]
         newpoint = self.computation_position_newpoint(A, B, dist_newpoint_B)
         self.completed_road.append(newpoint)
-        print("self.completed_road debut", self.completed_road)
         self.type_equation.append(1)
 
         for i in range(1, len(self.angles)):
@@ -127,7 +125,6 @@ class path_planning:
                 if j == 0 and math.dist(A, newpoint) < math.dist(A, self.completed_road[-1]):
                     #if the new point is before the last one, we replace both of them by the average point
                     #meaning 2 corners are too close
-                    print("if", "i", i)
                     last_point = self.completed_road[-1]
                     self.completed_road.pop()
                     d_first_corner = math.dist(newpoint, A) + math.dist(newpoint, last_point)/2
@@ -138,7 +135,6 @@ class path_planning:
                     temporary_A = self.road[i-1]
                     temporary_B = self.road[i]
                     self.completed_road[-3] = self.computation_position_newpoint(temporary_A, temporary_B, d_first_corner)
-                    print("bite1", self.completed_road)
 
                     #the point after is set now, ++j because we don't need to do the exit of the corner anymore
                     future_A = self.road[i+2]
@@ -146,7 +142,6 @@ class path_planning:
                     d_second_corner = math.dist(A, B) - d_first_corner
                     self.completed_road.append(future_B)  # we will need the corner point later
                     self.completed_road.append(self.computation_position_newpoint(future_A, future_B, d_second_corner))
-                    print("bite2", self.completed_road)
                     self.type_equation.append(1)
                     break
 
@@ -160,7 +155,7 @@ class path_planning:
         self.type_equation.append(0)
         #final points
         self.completed_road.append(self.road[-1])
-        self.completed_road = [[int(i) for i in sublist] for sublist in self.completed_road]
+        self.completed_road = [[round(i) for i in sublist] for sublist in self.completed_road]
         print("completed road point", self.completed_road)
         print("type roads", self.type_equation)
 
@@ -222,7 +217,6 @@ class path_planning:
                 break
             final_path.insert(0, x)
 
-        print("roadbite", final_path)
         return [int(x) for x in final_path]
 
     def parametrization_computation(self, point1, point2):
@@ -233,42 +227,89 @@ class path_planning:
 
         return m_x, m_y, p_x, p_y
 
-    def corner_equation(self, point1, point2, point3, t):
+    def corner_equation(self, point1, point2, point3,):
         # system of equations
-        A = np.array([[point1[0] - point3[0], point1[1] - point3[1]], [point2[0] - point3[0], point2[1] - point3[1]]])
+        c1=point1[0] - point3[0]
+        c2=point1[1] - point3[1]
+        d1=point2[0] - point3[0]
+        d2=point2[1] - point3[1]
+
+        #A = np.array([[c1, c2], [d1, d2]])
         b = np.array([[point1[0] ** 2 + point1[1] ** 2 - point1[0] * point3[0] - point1[1] * point3[1]],
                       [point2[0] ** 2 + point2[1] ** 2 - point2[0] * point3[0] - point2[1] * point3[1]]])
-        sol = np.linalg.solve(A, b)
 
-        print("x0 ", sol[0], "y0", sol[1])
-        r = math.dist(sol, point1) #sortir les valeurs calculées
+        C=np.array([[d2, -c2], [-d1, c1]])
+        if(c1*d2-d1*c2)!=0:
+            sol=(1/(c1*d2-d1*c2))*np.multiply(C,b)
+        else:
+            print("problem")
+        #sol = np.linalg.solve(A, b)
 
-        x = sol[0] + r*math.cos(t)
-        y = sol[1] + r*math.sin(t)
 
-        print("x ", x, "y ", y)
+        sol = [list(x) for x in sol]
+        solution = [0,0]
+        solution[0]= sol[0][0]
+        solution[1]= sol[1][1]
+        r = math.dist(solution, point1) #sortir les valeurs calculées
 
-        return x, y
+
+        #Calcul angles de depart, d'arrivée, et angle de l'arc
+        if (point1[0]-solution[0])==0:
+            if (point1[1]-solution[1])>0:
+                theta1=math.pi/2
+            else:
+                theta1=3*math.pi/2
+
+        if (point2[0]-solution[0])==0:
+            if (point2[1]-sol[1])>0:
+                theta2=math.pi/2
+            else:
+                theta2=3*math.pi/2
+        else:
+            theta1=math.atan2((point1[1]-solution[1]),(point1[0]-solution[0]))
+            theta2 = math.atan2((point2[1] - solution[1]) , (point2[0] - solution[0]))
+
+
+        if theta1==math.pi:
+            if theta2<0:
+                theta1=-theta1
+
+        if theta2==math.pi:
+            if theta1<0:
+                theta2=-theta2
+
+        theta=theta2-theta1
+
+        cornerlist = []
+
+        for j in range(11): #10 points par virage, à modifier
+            t = j*theta/10 + theta1
+
+            x = round(solution[0] + r*math.cos(t),2)
+            y = round(solution[1] + r*math.sin(t),2)
+
+            point = []
+            point.append(x)
+            point.append(y)
+
+            cornerlist.append(point)
+
+        return cornerlist
 
     def final_list_calculator(self):
         final_list = []
         final_list.append(self.completed_road[0])
-
+        counter = 0
         for i in range(len(self.type_equation)):
             if self.type_equation[i] == 0:
-                final_list.append(self.completed_road[i+1])
-            elif self.type_equation[i] == 1:
-                for j in range (0, 11):
-                    t = j/10
-                    point = []
-                    print("t", t)
-                    print("point1 ", self.completed_road[i], " point2 ", self.completed_road[i + 2], " point3 ", self.completed_road[i + 1])
-                    x, y = self.corner_equation(self.completed_road[i], self.completed_road[i + 2], self.completed_road[i + 1], t)
-                    point.append(x)
-                    point.append(y)
-                    final_list.append(point)
+                final_list.append(self.completed_road[counter+1])
 
-            print("final list ", final_list)
+            elif self.type_equation[i] == 1:
+                cornerlist = self.corner_equation(self.completed_road[counter], self.completed_road[counter + 2], self.completed_road[counter + 1])
+                final_list.append(cornerlist)
+                counter += 1
+            counter += 1
+        print("final list ", final_list)
         return final_list
 
 
