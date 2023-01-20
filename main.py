@@ -1,5 +1,6 @@
 import numpy as np
 from math import *
+from sympy import symbols, Eq, solve
 import matplotlib.pyplot as plt
 from matplotlib.animation import FuncAnimation
 
