@@ -1,111 +1,49 @@
-import numpy as np
-from math import *
-from sympy import symbols, Eq, solve
 import matplotlib.pyplot as plt
 from matplotlib.animation import FuncAnimation
+import main
+import path_planning
+from matplotlib.animation import PillowWriter
+import numpy as np
+from math import *
 
 
+fig, ax = plt.subplots(1, 1)
+fig.set_size_inches(5,5)
 
-
-class Robot:
-    def __init__(self, h):
-        self.x = 0 #Meters
-        self.y = 40 #Meters
-        self.theta = pi/2 #Rad
-        self.phi = 0  #Rad
-        self.v = 1 #Meters/s
-        self.L = 2.46 # Meters
-        self.omega = 0
-        self.omega_s = 0
-        # Derivatives are indicated with an extra "_"
-
-        self.theta_ = 0
-        self.phi_ = 0
-        # Reference points
-
-        self.x_ref = 0
-        self.y_ref = 10
-        self.theta_ref = 0
-        self.ref_point_counter = 0
-        self.dist_from_ref_point = 10
-        # Control variables
-
-        self.e = 0
-        self.e_int = 0
-
-        self.theta_err = 0
-        self.theta_err_der = 0
-
-        self.Kv = 1
-        self.Ki = 0.01
-        self.Kh = 2
-        self.Khd = 1
-
-    def kinematics(self, h):
-        self.x = self.x + h * cos(self.theta) * self.v
-        self.y = self.y + h * sin(self.theta) * self.v
-        self.theta = self.theta + (h * tan(self.phi) * self.v) / self.L
-        self.phi = self.phi + self.phi_ * h
-        if abs(self.phi) > pi/8:
-            self.phi = sign(self.phi)* pi/8
-
-    def find_initial_ref_point(self, ref_point_traj):
-        distance_list = np.empty(ref_point_traj.shape[0])
-        for i, point in enumerate(ref_point_traj):
-            distance_list[i] = dist((self.x, self.y), point)
-        self.ref_point_counter = np.argmin(distance_list)
-        self.ref_point_counter += self.dist_from_ref_point
-        self.ref_point_counter = min(self.ref_point_counter, len(ref_point_traj) -1)
-        self.x_ref = ref_point_traj[self.ref_point_counter][0]
-        self.y_ref = ref_point_traj[self.ref_point_counter][1]
-        self.theta_ref = atan((self.y_ref-self.y)/(self.x_ref-self.x))
-
-        return
-
-
-
-    def control_param(self, h):
-        self.e = sqrt((self.x_ref-self.x)**2 + (self.y_ref-self.y)**2) - self.dist_from_ref_point
-        self.e_int +=self.e
-
-        past_err = self.theta_err
-        self.theta_err = angdiff(self.theta_ref, self.theta)
-        self.theta_err_der = (self.theta_err - past_err)/h
-
-    def set_new_param(self):
-        self.v = self.Kv * self.e + self.Ki * self.e_int
-        self.phi_ = self.Kh *  + self.theta_err + self.Khd * self.theta_err_der
-
-
-def sign(x):
-    if x > 0:
-        return 1
-    elif x < 0 :
-        return -1
-    else:
-        return 0
-
-def angdiff(x1,x2):
-    angle = (x1-x2) % (2*pi)
-    while angle > pi:
-        angle -= 2*pi
-    return angle
-
-
-"""#Main loop:
-def main_loop(robot):
-    robot.kinematics()
-    robot.control_param()
-    robot.set_new_param()
-    return robot.x, robot.y
-
+h = 0.01      #seconds/iteration
+t = 15     #seconds
+points = []
+robot = main.Robot(h)
+route = path_planning.path_planning(2,5)
+ref_traj = np.array(route.twoD_traj)
+"""ref_traj_1 = np.stack((np.arange(0, 50, 1), np.ones((50)) * 10), axis = -1)
+ref_traj_2 = np.stack((np.ones((10)) * 50, np.arange(10, 20, 1)), axis = -1)
+ref_traj_3 = np.stack((np.arange(50, 70, 1), np.ones((20)) * 20), axis = -1)
+ref_traj = np.concatenate((ref_traj_1, ref_traj_2,ref_traj_3))
+print(t)
 """
+def main_loop(robot):
+    for i in range(int(t/h)):
+        robot.kinematics(h)
+        robot.find_initial_ref_point(ref_traj)
+        robot.control_param(h)
+        robot.set_new_param()
+        points.append((robot.x,robot.y,robot.theta, robot.x_ref,robot.y_ref))
 
-"""while True:
-    robot.kinematics()
-    robot.control_param()
-    robot.set_new_param()
-    point = [robot.x, robot.y]
-    points.append(point)
-    render.animate(i,h,t)
-    i += 1"""
+def animate(i):
+    ax.clear()
+    point = points[i]
+    ax.plot(point[0], point[1], color='green',label='original', marker='o')
+    ax.plot(ref_traj[:,0],ref_traj[:,1], color='blue',label='original', marker='o')
+    ax.plot(point[3], point[4], color='red',label='original', marker='o')
+    ax.arrow(point[0]- 0.5 * robot.L * cos(point[2]), point[1] - 0.5 * robot.L * sin(point[2]),
+              robot.L * cos(point[2]), robot.L * sin(point[2]))
+
+    ax.set_xlim([0, 70])
+    ax.set_ylim([0, 100])
+
+main_loop(robot)
+anim = FuncAnimation(fig, animate,frames=int(t/h), interval=int(h * 1000), repeat=False)
+# Save the animation as an animated GIF
+#anim.save("simple_animation.gif", dpi = 300, writer=PillowWriter(fps=int(1/h)))
+plt.show()
