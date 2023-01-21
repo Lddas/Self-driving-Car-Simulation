@@ -112,6 +112,7 @@ class path_planning:
                     #entry in the corner
                     A = self.road[i]
                     B = self.road[i+1]
+                    dist_newpoint_B = 20 - 0.1 * self.angles[i]
 
                 if j == 1:
                     #exit of the corner
@@ -119,7 +120,7 @@ class path_planning:
                     B = self.road[i+1]
                     self.completed_road.append(B) #we will need the corner point later
 
-                dist_newpoint_B = 20 - 0.1 * self.angles[i]
+
                 newpoint = self.computation_position_newpoint(A, B, dist_newpoint_B)
 
                 if j == 0 and math.dist(A, newpoint) < math.dist(A, self.completed_road[-1]):
@@ -248,9 +249,11 @@ class path_planning:
 
         sol = [list(x) for x in sol]
         solution = [0,0]
-        solution[0]= sol[0][0]
-        solution[1]= sol[1][1]
+        solution[0] = sol[0][0]
+        solution[1] = sol[1][1]
         r = math.dist(solution, point1) #sortir les valeurs calculées
+        print("sol", solution)
+        print("r", r)
 
 
         #Calcul angles de depart, d'arrivée, et angle de l'arc
