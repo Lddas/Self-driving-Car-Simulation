@@ -13,15 +13,13 @@ h = 0.01      #seconds/iteration
 t = 15     #seconds
 points = []
 robot = robot.Robot(h)
-#route = path_planning.path_planning(2,5)
-#ref_traj = np.array(route.final_trajectory)
-
-ref_traj_1 = np.stack((np.arange(0, 50, 1), np.ones((50)) * 10), axis = -1)
+route = path_planning.path_planning(2,5)
+ref_traj = np.array(route.final_trajectory)
+"""ref_traj_1 = np.stack((np.arange(0, 50, 1), np.ones((50)) * 10), axis = -1)
 ref_traj_2 = np.stack((np.ones((10)) * 50, np.arange(10, 20, 1)), axis = -1)
 ref_traj_3 = np.stack((np.arange(50, 70, 1), np.ones((20)) * 20), axis = -1)
 ref_traj = np.concatenate((ref_traj_1, ref_traj_2,ref_traj_3))
-print(t)
-
+print(t)"""
 def main_loop(robot):
     for i in range(int(t/h)):
         robot.kinematics(h)

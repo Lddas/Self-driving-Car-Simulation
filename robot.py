@@ -1,12 +1,16 @@
 import numpy as np
 from math import *
+import matplotlib.pyplot as plt
+from matplotlib.animation import FuncAnimation
+
+
 
 
 class Robot:
     def __init__(self, h):
-        self.x = 0 #Meters
-        self.y = 30 #Meters
-        self.theta = 0 #Rad
+        self.x = 80 #Meters
+        self.y = 0 #Meters
+        self.theta = pi #Rad
         self.phi = 0  #Rad
         self.v = 1 #Meters/s
         self.L = 2.46 # Meters
@@ -21,8 +25,7 @@ class Robot:
         self.x_ref = 0
         self.y_ref = 10
         self.theta_ref = 0
-        self.ref_point_counter = 0
-        self.dist_from_ref_point = 20
+        self.dist_from_ref_point = 5
         # Control variables
 
         self.e = 0
@@ -31,10 +34,10 @@ class Robot:
         self.theta_err = 0
         self.theta_err_der = 0
 
-        self.Kv = 5
-        self.Ki = 0.05
-        self.Kh = 10
-        self.Khd = 0
+        self.Kv = 1
+        self.Ki = 0.01
+        self.Kh = 5
+        self.Khd = 0.5
 
     def kinematics(self, h):
         self.x = self.x + h * cos(self.theta) * self.v
@@ -42,7 +45,7 @@ class Robot:
         self.theta = self.theta + (h * tan(self.phi) * self.v) / self.L
         self.phi = self.phi + self.phi_ * h
         if abs(self.phi) > pi/8:
-            self.phi = sign(self.phi)* pi/8
+            self.phi = sign(self.phi) * pi/8
 
     def find_initial_ref_point(self, ref_point_traj):
         distance_list = np.empty(ref_point_traj.shape[0])
@@ -53,7 +56,7 @@ class Robot:
         self.ref_point_counter = min(self.ref_point_counter, len(ref_point_traj) -1)
         self.x_ref = ref_point_traj[self.ref_point_counter][0]
         self.y_ref = ref_point_traj[self.ref_point_counter][1]
-        self.theta_ref = atan((self.y_ref-self.y)/(self.x_ref-self.x))
+        self.theta_ref = atan2((self.y_ref-self.y),(self.x_ref-self.x))
 
         return
 
@@ -61,7 +64,7 @@ class Robot:
 
     def control_param(self, h):
         self.e = sqrt((self.x_ref-self.x)**2 + (self.y_ref-self.y)**2) - self.dist_from_ref_point
-        self.e_int += self.e
+        self.e_int +=self.e
 
         past_err = self.theta_err
         self.theta_err = angdiff(self.theta_ref, self.theta)
@@ -86,3 +89,21 @@ def angdiff(x1,x2):
         angle -= 2*pi
     return angle
 
+
+"""#Main loop:
+def main_loop(robot):
+    robot.kinematics()
+    robot.control_param()
+    robot.set_new_param()
+    return robot.x, robot.y
+
+"""
+
+"""while True:
+    robot.kinematics()
+    robot.control_param()
+    robot.set_new_param()
+    point = [robot.x, robot.y]
+    points.append(point)
+    render.animate(i,h,t)
+    i += 1"""
