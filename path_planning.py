@@ -2,9 +2,6 @@ import numpy as np
 import matplotlib.pyplot as plt
 import math
 from sympy import symbols, Eq, solve
-
-
-
 class path_planning:
     def __init__(self, starting_pt, finishing_pt):
         self.map = [(10, 10), (30, 10), (50, 10), (10, 30), (30, 30), (10, 50), (100, 30)]
@@ -32,11 +29,6 @@ class path_planning:
         self.angles_computation()
         self.complete_road()
         self.final_trajectory = self.final_list_calculator()
-        self.twoD_traj = []
-        for list in self.final_trajectory:
-            for coord in list:
-                self.twoD_traj.append(coord)
-
 
     def initial_graph(self):
 
@@ -203,7 +195,7 @@ class path_planning:
 
         return m_x, m_y, p_x, p_y
 
-    def corner_equation(self, point1, point2, point3,):
+    def corner_equation(self, cornerlist, point1, point2, point3,):
         # system of equations
         c1=point1[0] - point3[0]
         c2=point1[1] - point3[1]
@@ -256,9 +248,7 @@ class path_planning:
 
         theta=theta2-theta1
 
-        cornerlist = []
-
-        for j in range(11): #10 points par virage, à modifier
+        for j in range(1, 11): #10 points par virage, à modifier
             t = j*theta/10 + theta1
 
             x = round(solution[0] + r*math.cos(t),2)
@@ -278,11 +268,13 @@ class path_planning:
         counter = 0
         for i in range(len(self.type_equation)):
             if self.type_equation[i] == 0:
-                final_list.append(self.completed_road[counter+1])
+                for j in range(1, 11):  # 10 points per corner, can be modified
+                    distance = j*math.dist(self.completed_road[counter], self.completed_road[counter+1])/10
+                    newpoint = self.computation_position_newpoint(self.completed_road[counter+1], self.completed_road[counter], distance) #inversed because we want the distance from self.completed_road[counter+1] to decrease
+                    final_list.append(newpoint)
 
             elif self.type_equation[i] == 1:
-                cornerlist = self.corner_equation(self.completed_road[counter], self.completed_road[counter + 2], self.completed_road[counter + 1])
-                final_list.append(cornerlist)
+                final_list = self.corner_equation(final_list, self.completed_road[counter], self.completed_road[counter + 2], self.completed_road[counter + 1])
                 counter += 1
             counter += 1
         print("final list ", final_list)
@@ -302,9 +294,19 @@ class path_planning:
 
 
 
+def animate(i):
+    ax.clear()
+    # Plot that point using the x and y coordinates
+    point = points[i]
+    ax.plot(point[0], point[1], color='green',
+            label='original', marker='o')
+    # Set the x and y axis to display a fixed range
+    ax.set_xlim([0, 5])
+    ax.set_ylim([0, 5])
 
 
 def main():
+    car = car_simulation()
 
     #for i in range(int(t/h)):
         #x, y, theta, phi = car.coord_computation()
@@ -319,10 +321,4 @@ def main():
 
 
     #plt.show()
-
-
-
-
-
-
 

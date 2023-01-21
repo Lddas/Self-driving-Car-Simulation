@@ -5,8 +5,8 @@ from math import *
 class Robot:
     def __init__(self, h):
         self.x = 0 #Meters
-        self.y = 40 #Meters
-        self.theta = pi/2 #Rad
+        self.y = 30 #Meters
+        self.theta = 0 #Rad
         self.phi = 0  #Rad
         self.v = 1 #Meters/s
         self.L = 2.46 # Meters
@@ -22,7 +22,7 @@ class Robot:
         self.y_ref = 10
         self.theta_ref = 0
         self.ref_point_counter = 0
-        self.dist_from_ref_point = 10
+        self.dist_from_ref_point = 20
         # Control variables
 
         self.e = 0
@@ -31,10 +31,10 @@ class Robot:
         self.theta_err = 0
         self.theta_err_der = 0
 
-        self.Kv = 1
-        self.Ki = 0.01
-        self.Kh = 2
-        self.Khd = 1
+        self.Kv = 5
+        self.Ki = 0.05
+        self.Kh = 10
+        self.Khd = 0
 
     def kinematics(self, h):
         self.x = self.x + h * cos(self.theta) * self.v
@@ -61,7 +61,7 @@ class Robot:
 
     def control_param(self, h):
         self.e = sqrt((self.x_ref-self.x)**2 + (self.y_ref-self.y)**2) - self.dist_from_ref_point
-        self.e_int +=self.e
+        self.e_int += self.e
 
         past_err = self.theta_err
         self.theta_err = angdiff(self.theta_ref, self.theta)
@@ -69,7 +69,7 @@ class Robot:
 
     def set_new_param(self):
         self.v = self.Kv * self.e + self.Ki * self.e_int
-        self.phi_ = self.Kh *  + self.theta_err + self.Khd * self.theta_err_der
+        self.phi_ = self.Kh * self.theta_err + self.Khd * self.theta_err_der
 
 
 def sign(x):
