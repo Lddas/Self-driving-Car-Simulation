@@ -1,7 +1,5 @@
 import numpy as np
-from math import *
-import matplotlib.pyplot as plt
-from matplotlib.animation import FuncAnimation
+from math import cos,sin,atan2,pi,dist,tan,sqrt
 
 
 
@@ -47,6 +45,7 @@ class Robot:
         if abs(self.phi) > pi/8:
             self.phi = sign(self.phi) * pi/8
 
+    # Finds the closest point to the robot and chooses a few points ahead for the reference points
     def find_initial_ref_point(self, ref_point_traj):
         distance_list = np.empty(ref_point_traj.shape[0])
         for i, point in enumerate(ref_point_traj):
@@ -88,22 +87,3 @@ def angdiff(x1,x2):
     while angle > pi:
         angle -= 2*pi
     return angle
-
-
-"""#Main loop:
-def main_loop(robot):
-    robot.kinematics()
-    robot.control_param()
-    robot.set_new_param()
-    return robot.x, robot.y
-
-"""
-
-"""while True:
-    robot.kinematics()
-    robot.control_param()
-    robot.set_new_param()
-    point = [robot.x, robot.y]
-    points.append(point)
-    render.animate(i,h,t)
-    i += 1"""
