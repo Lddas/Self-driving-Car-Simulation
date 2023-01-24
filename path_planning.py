@@ -62,16 +62,19 @@ class path_planning:
         self.completed_road.append(A)
         B = self.road[1]
         # 20m = max distance for a turn
-        dist_newpoint_B = 20-0.1 * self.angles[0]
+        dist_newpoint_B = round(20-0.1 * self.angles[0])
         newpoint = self.computation_position_newpoint(A, B, dist_newpoint_B)
+        print("dist_newpoint_B", dist_newpoint_B)
         self.completed_road.append(newpoint)
+        print("completed road point", self.completed_road)
         self.completed_road.append(B)  # we will need the corner point later
         self.type_equation.append(0)
 
         A = self.road[2]
-        dist_newpoint_B = 20-0.1 * self.angles[0]
         newpoint = self.computation_position_newpoint(A, B, dist_newpoint_B)
+        print("dist_newpoint_B", dist_newpoint_B)
         self.completed_road.append(newpoint)
+        print("completed road point", self.completed_road)
         self.type_equation.append(1)
 
         for i in range(1, len(self.angles)):
@@ -80,14 +83,17 @@ class path_planning:
                     #entry in the corner
                     A = self.road[i]
                     B = self.road[i+1]
+                    dist_newpoint_B = round(20 - 0.1 * self.angles[i], 2)
 
                 if j == 1:
                     #exit of the corner
                     A = self.road[i+2]
                     B = self.road[i+1]
+                    print("dist_newpoint_B", dist_newpoint_B)
                     self.completed_road.append(B) #we will need the corner point later
+                    print("completed road point", self.completed_road)
 
-                dist_newpoint_B = 20 - 0.1 * self.angles[i]
+
                 newpoint = self.computation_position_newpoint(A, B, dist_newpoint_B)
 
                 if j == 0 and math.dist(A, newpoint) < math.dist(A, self.completed_road[-1]):
@@ -114,6 +120,7 @@ class path_planning:
                     break
 
                 else:
+                    print("dist_newpoint_B", dist_newpoint_B)
                     self.completed_road.append(newpoint)
                     if j == 0:
                         self.type_equation.append(0)
@@ -123,9 +130,13 @@ class path_planning:
         self.type_equation.append(0)
         #final points
         self.completed_road.append(self.road[-1])
-        self.completed_road = [[round(i) for i in sublist] for sublist in self.completed_road]
-        print("completed road point", self.completed_road)
-        print("type roads", self.type_equation)
+        for i in range(len(self.completed_road)):
+            if isinstance(self.completed_road[i], tuple):
+                self.completed_road[i] = list(self.completed_road[i])
+            elif not isinstance(self.completed_road[i], list):
+                self.completed_road[i] = [self.completed_road[i]]
+            self.completed_road[i] = [round(self.completed_road[i][0], 2), round(self.completed_road[i][1], 2)]
+        print("completed road", self.completed_road)
 
 
     def computation_position_newpoint(self, A, B, dist_newpoint_B):
@@ -141,7 +152,7 @@ class path_planning:
         else:
             solution = sol[1]
 
-        newpoint = (m_x * round(solution, 2) + p_x, m_y * round(solution, 2) + p_y)
+        newpoint = (m_x * round(solution, 4) + p_x, m_y * round(solution, 4) + p_y)
         return newpoint
 
 
@@ -195,70 +206,71 @@ class path_planning:
 
         return m_x, m_y, p_x, p_y
 
-    def corner_equation(self, cornerlist, point1, point2, point3,):
+    def corner_equation(self, cornerlist, point1, point2, point3):
         # system of equations
         c1=point1[0] - point3[0]
         c2=point1[1] - point3[1]
         d1=point2[0] - point3[0]
         d2=point2[1] - point3[1]
 
-        #A = np.array([[c1, c2], [d1, d2]])
+        # A = np.array([[c1, c2], [d1, d2]])
+        A = np.array([[point1[0] - point3[0], point1[1] - point3[1]], [point2[0] - point3[0], point2[1] - point3[1]]])
         b = np.array([[point1[0] ** 2 + point1[1] ** 2 - point1[0] * point3[0] - point1[1] * point3[1]],
                       [point2[0] ** 2 + point2[1] ** 2 - point2[0] * point3[0] - point2[1] * point3[1]]])
 
-        C=np.array([[d2, -c2], [-d1, c1]])
-        if(c1*d2-d1*c2)!=0:
-            sol=(1/(c1*d2-d1*c2))*np.multiply(C,b)
+        C = np.array([[d2, -c2], [-d1, c1]])
+        if (c1 * d2 - d1 * c2) != 0:
+            sol = (1 / (c1 * d2 - d1 * c2)) * C.dot(b)
         else:
             print("problem")
-        #sol = np.linalg.solve(A, b)
-
-
+        # sol = np.linalg.solve(A, b)
         sol = [list(x) for x in sol]
-        solution = [0,0]
-        solution[0]= sol[0][0]
-        solution[1]= sol[1][1]
-        r = math.dist(solution, point1) #sortir les valeurs calculées
+        solution = [0, 0]
+        print("sol", sol)
+        solution[0] = round(sol[0][0], 2)
+        solution[1] = round(sol[1][0], 2)
+        r = math.dist(solution, point1)  # sortir les valeurs calculées
 
-
-        #Calcul angles de depart, d'arrivée, et angle de l'arc
-        if (point1[0]-solution[0])==0:
-            if (point1[1]-solution[1])>0:
-                theta1=math.pi/2
+        # Calcul angles de depart, d'arrivée, et angle de l'arc
+        if (point1[0] - solution[0]) == 0:
+            if (point1[1] - solution[1]) > 0:
+                theta1 = math.pi / 2
             else:
-                theta1=3*math.pi/2
-
-        if (point2[0]-solution[0])==0:
-            if (point2[1]-sol[1])>0:
-                theta2=math.pi/2
-            else:
-                theta2=3*math.pi/2
+                theta1 = 3 * math.pi / 2
         else:
-            theta1=math.atan2((point1[1]-solution[1]),(point1[0]-solution[0]))
-            theta2 = math.atan2((point2[1] - solution[1]) , (point2[0] - solution[0]))
+            theta1 = math.atan2((point1[1] - solution[1]), (point1[0] - solution[0]))
 
+        if (point2[0] - solution[0]) == 0:
+            if (point2[1] - solution[1]) > 0:
+                theta2 = math.pi / 2
+            else:
+                theta2 = 3 * math.pi / 2
+        else:
+            theta2 = math.atan2((point2[1] - solution[1]), (point2[0] - solution[0]))
 
-        if theta1==math.pi:
-            if theta2<0:
-                theta1=-theta1
+        if theta1 == math.pi:
+            if theta2 < 0:
+                theta1 = -theta1
 
-        if theta2==math.pi:
-            if theta1<0:
-                theta2=-theta2
+        if theta2 == math.pi:
+            if theta1 < 0:
+                theta2 = -theta2
 
-        theta=theta2-theta1
+        theta = theta2 - theta1
 
-        for j in range(1, 11): #10 points par virage, à modifier
-            t = j*theta/10 + theta1
+        for j in range(1, 11):  # 10 points par virage, à modifier
+            t = j * theta / 10 + theta1
 
-            x = round(solution[0] + r*math.cos(t),2)
-            y = round(solution[1] + r*math.sin(t),2)
+            x = round(solution[0] + r * math.cos(t), 2)
+            y = round(solution[1] + r * math.sin(t), 2)
 
             point = []
             point.append(x)
             point.append(y)
-
             cornerlist.append(point)
+        print("r", r)
+        print("distance1", math.dist(point1, point3))
+        print("distance2", math.dist(point2, point3))
 
         return cornerlist
 
@@ -269,56 +281,27 @@ class path_planning:
         for i in range(len(self.type_equation)):
             if self.type_equation[i] == 0:
                 for j in range(1, 11):  # 10 points per corner, can be modified
-                    distance = j*math.dist(self.completed_road[counter], self.completed_road[counter+1])/10
-                    newpoint = self.computation_position_newpoint(self.completed_road[counter+1], self.completed_road[counter], distance) #inversed because we want the distance from self.completed_road[counter+1] to decrease
+                    distance = j * math.dist(self.completed_road[counter], self.completed_road[counter + 1]) / 10
+                    newpoint = self.computation_position_newpoint(self.completed_road[counter + 1],
+                                                                  self.completed_road[counter],
+                                                                  distance)  # inversed because we want the distance from self.completed_road[counter+1] to decrease
                     final_list.append(newpoint)
 
             elif self.type_equation[i] == 1:
-                final_list = self.corner_equation(final_list, self.completed_road[counter], self.completed_road[counter + 2], self.completed_road[counter + 1])
+                print("nouveau virage avec i=", i)
+                print("counter=", counter)
+                final_list = self.corner_equation(final_list, self.completed_road[counter],
+                                                  self.completed_road[counter + 2], self.completed_road[counter + 1])
                 counter += 1
             counter += 1
         print("final list ", final_list)
+
+        for i in range(len(final_list)):
+            if isinstance(final_list[i], tuple):
+                final_list[i] = list(final_list[i])
+            elif not isinstance(final_list[i], list):
+                final_list[i] = [final_list[i]]
+
+            final_list[i] = [round(final_list[i][0], 1), round(final_list[i][1], 1)]
+
         return final_list
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-def animate(i):
-    ax.clear()
-    # Plot that point using the x and y coordinates
-    point = points[i]
-    ax.plot(point[0], point[1], color='green',
-            label='original', marker='o')
-    # Set the x and y axis to display a fixed range
-    ax.set_xlim([0, 5])
-    ax.set_ylim([0, 5])
-
-
-def main():
-    car = car_simulation()
-
-    #for i in range(int(t/h)):
-        #x, y, theta, phi = car.coord_computation()
-        #point = [x, y]
-        #points.append(point)
-
-    route = path_planning(2, 5)
-    #points = route.road
-
-    #ani = FuncAnimation(fig, animate, frames=5, interval=500, repeat=False)
-
-
-
-    #plt.show()
-
