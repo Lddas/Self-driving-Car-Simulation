@@ -268,7 +268,7 @@ class path_planning:
             if (point1[1] - solution[1]) > 0:
                 theta1 = math.pi / 2
             else:
-                theta1 = 3 * math.pi / 2
+                theta1 = - math.pi / 2
         else:
             theta1 = math.atan2((point1[1] - solution[1]), (point1[0] - solution[0]))
 
@@ -276,7 +276,7 @@ class path_planning:
             if (point2[1] - solution[1]) > 0:
                 theta2 = math.pi / 2
             else:
-                theta2 = 3 * math.pi / 2
+                theta2 = - math.pi / 2
         else:
             theta2 = math.atan2((point2[1] - solution[1]), (point2[0] - solution[0]))
 
