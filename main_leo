@@ -36,7 +36,11 @@ class car_simulation:
 
 class path_planning:
     def __init__(self, starting_pt, finishing_pt):
-        self.map = [(10, 10), (30, 10), (50, 10), (10, 30), (30, 30), (10, 50), (100, 30)]
+        self.map = [(101.5,64.6),(419.5,25.9), (463.7,25.4), (115.7,336.2),
+           (442.4,312.8), (489.9,308.4), (471.3,370.1), (139.2,673.9),
+           (122.8,718.6), (910.4,701.7), (133.7,893.7), (189.3,893.1),
+           (477.9,874.6), (527.5,868.6), (150.1,1128.7), (204.1,1125.5),
+           (510,1232.4), (552.6,1226.4),(904.9,1189.8),(936,1159.3)]
         #self.g = Graph(5)
         #self.g.graph = [[0, 0, 0, 20, 0, 0, 0],
                         #[0, 0, 20, 0, 15, 0, 0],
@@ -63,15 +67,28 @@ class path_planning:
         self.final_trajectory = self.final_list_calculator()
 
     def initial_graph(self):
-
         return {
-            '0': {'3': 30},
-            '1': {'2': 20, '4': 30},
-            '2': {'1': 20},
-            '3': {'0': 30, '4': 20, '5': 80},
-            '4': {'1': 30, '3': 20, '6': 40},
-            '5': {'3': 80, '6': 40},
-            '6': {'5': 40, '4': 40}
+            '0': {'3': math.dist(self.map[0],self.map[3])},
+            '1': {'4': math.dist(self.map[1],self.map[4])},
+            '2': {'5': math.dist(self.map[2],self.map[5])},
+            '3': {'0': math.dist(self.map[3],self.map[0]), '4': math.dist(self.map[3],self.map[4]), '7': math.dist(self.map[3],self.map[7])},
+            '4': {'1': math.dist(self.map[4],self.map[1]), '3': math.dist(self.map[4],self.map[3]), '5': math.dist(self.map[4],self.map[5]),'6':math.dist(self.map[4],self.map[6])},
+            '5': {'2': math.dist(self.map[5],self.map[2]), '4': math.dist(self.map[5],self.map[4]),'6':math.dist(self.map[5],self.map[6])},
+            '6': {'4': math.dist(self.map[6],self.map[4]), '5': math.dist(self.map[6],self.map[5]),'13':math.dist(self.map[6],self.map[13])},
+            '7':{'3':math.dist(self.map[7],self.map[3]),'8':math.dist(self.map[7],self.map[8])},
+            '8':{'7':math.dist(self.map[8],self.map[7]),'10':math.dist(self.map[8],self.map[10])},
+            '9':{'19':math.dist(self.map[9],self.map[19])},
+            '10':{'8':math.dist(self.map[10],self.map[8]),'11':math.dist(self.map[10],self.map[11]),'14':math.dist(self.map[10],self.map[14])},
+            '11': {'10':math.dist(self.map[11],self.map[10]),'15':math.dist(self.map[11],self.map[15]),'12':math.dist(self.map[11],self.map[12])},
+            '12': {'11':math.dist(self.map[12],self.map[11]),'13':math.dist(self.map[12],self.map[13])},
+            '13': {'6':math.dist(self.map[13],self.map[6]),'12':math.dist(self.map[13],self.map[12]),'17':math.dist(self.map[13],self.map[17])},
+            '14': {'10':math.dist(self.map[14],self.map[10]),'15':math.dist(self.map[14],self.map[15])},
+            '15': {'11':math.dist(self.map[15],self.map[11]),'14':math.dist(self.map[15],self.map[14])},
+            '16': {'12':math.dist(self.map[16],self.map[12]),'17':math.dist(self.map[16],self.map[17])},
+            '17': {'13':math.dist(self.map[17],self.map[13]),'16':math.dist(self.map[17],self.map[16]),'18':math.dist(self.map[17],self.map[18])},
+            '18': {'17':math.dist(self.map[18],self.map[17]),'19':math.dist(self.map[18],self.map[19])},
+            '19': {'9':math.dist(self.map[19],self.map[9]),'18':math.dist(self.map[19],self.map[18])},
+
         }
 
     def angles_computation(self):
@@ -86,7 +103,6 @@ class path_planning:
             theta = math.pi-math.acos((vector1[0]*vector2[0]+vector1[1]*vector2[1])/(math.sqrt(vector1[0]**2+vector1[1]**2)*math.sqrt(vector2[0]**2+vector2[1]**2)))
             theta = theta * 180/math.pi
             self.angles.append(round(theta,2))
-        print("self.angles", self.angles)
 
     def complete_road(self):
         #initialization of the final road
@@ -96,17 +112,13 @@ class path_planning:
         # 20m = max distance for a turn
         dist_newpoint_B = round(20-0.1 * self.angles[0])
         newpoint = self.computation_position_newpoint(A, B, dist_newpoint_B)
-        print("dist_newpoint_B", dist_newpoint_B)
         self.completed_road.append(newpoint)
-        print("completed road point", self.completed_road)
         self.completed_road.append(B)  # we will need the corner point later
         self.type_equation.append(0)
 
         A = self.road[2]
         newpoint = self.computation_position_newpoint(A, B, dist_newpoint_B)
-        print("dist_newpoint_B", dist_newpoint_B)
         self.completed_road.append(newpoint)
-        print("completed road point", self.completed_road)
         self.type_equation.append(1)
 
         for i in range(1, len(self.angles)):
@@ -121,9 +133,7 @@ class path_planning:
                     #exit of the corner
                     A = self.road[i+2]
                     B = self.road[i+1]
-                    print("dist_newpoint_B", dist_newpoint_B)
                     self.completed_road.append(B) #we will need the corner point later
-                    print("completed road point", self.completed_road)
 
 
                 newpoint = self.computation_position_newpoint(A, B, dist_newpoint_B)
@@ -152,7 +162,6 @@ class path_planning:
                     break
 
                 else:
-                    print("dist_newpoint_B", dist_newpoint_B)
                     self.completed_road.append(newpoint)
                     if j == 0:
                         self.type_equation.append(0)
@@ -239,6 +248,10 @@ class path_planning:
         return m_x, m_y, p_x, p_y
 
     def corner_equation(self, cornerlist, point1, point2, point3):
+        #print("P1",point1)
+        #print("P2", point2)
+        #print("P3", point3)
+
         # system of equations
         c1=point1[0] - point3[0]
         c2=point1[1] - point3[1]
@@ -258,9 +271,9 @@ class path_planning:
         # sol = np.linalg.solve(A, b)
         sol = [list(x) for x in sol]
         solution = [0, 0]
-        print("sol", sol)
         solution[0] = round(sol[0][0], 2)
         solution[1] = round(sol[1][0], 2)
+        #print("P0",solution)
         r = math.dist(solution, point1)  # sortir les valeurs calculées
 
         # Calcul angles de depart, d'arrivée, et angle de l'arc
@@ -268,7 +281,7 @@ class path_planning:
             if (point1[1] - solution[1]) > 0:
                 theta1 = math.pi / 2
             else:
-                theta1 = - math.pi / 2
+                theta1 = -math.pi / 2
         else:
             theta1 = math.atan2((point1[1] - solution[1]), (point1[0] - solution[0]))
 
@@ -276,7 +289,7 @@ class path_planning:
             if (point2[1] - solution[1]) > 0:
                 theta2 = math.pi / 2
             else:
-                theta2 = - math.pi / 2
+                theta2 = -math.pi / 2
         else:
             theta2 = math.atan2((point2[1] - solution[1]), (point2[0] - solution[0]))
 
@@ -289,7 +302,21 @@ class path_planning:
                 theta2 = -theta2
 
         theta = theta2 - theta1
+        if (abs(theta)>(2*math.pi-abs(theta))):
+            if(theta1<0) and ((theta1+theta2)>0):
+                theta = -(theta1 + theta2)
+            else:
+                theta=theta1+theta2
 
+        #theta=(theta1 - theta2) % (2 * math.pi)
+        #while theta > math.pi:
+            #theta -= 2 * math.pi
+
+
+
+        #print("theta1",theta1)
+        #print("theta2", theta2)
+        #print("theta", theta)
         for j in range(1, 11):  # 10 points par virage, à modifier
             t = j * theta / 10 + theta1
 
@@ -300,9 +327,6 @@ class path_planning:
             point.append(x)
             point.append(y)
             cornerlist.append(point)
-        print("r", r)
-        print("distance1", math.dist(point1, point3))
-        print("distance2", math.dist(point2, point3))
 
         return cornerlist
 
@@ -310,6 +334,7 @@ class path_planning:
         final_list = []
         final_list.append(self.completed_road[0])
         counter = 0
+        print("type_equation",self.type_equation)
         for i in range(len(self.type_equation)):
             if self.type_equation[i] == 0:
                 for j in range(1, 11):  # 10 points per corner, can be modified
@@ -320,13 +345,12 @@ class path_planning:
                     final_list.append(newpoint)
 
             elif self.type_equation[i] == 1:
-                print("nouveau virage avec i=", i)
-                print("counter=", counter)
+                #print("counter",counter)
                 final_list = self.corner_equation(final_list, self.completed_road[counter],
                                                   self.completed_road[counter + 2], self.completed_road[counter + 1])
                 counter += 1
             counter += 1
-        print("final list ", final_list)
+
 
         for i in range(len(final_list)):
             if isinstance(final_list[i], tuple):
@@ -335,19 +359,20 @@ class path_planning:
                 final_list[i] = [final_list[i]]
 
             final_list[i] = [round(final_list[i][0], 1), round(final_list[i][1], 1)]
-
+        #print("final list ", final_list)
         return final_list
 
 
-def animate(i):
-    ax.clear()
-    # Plot that point using the x and y coordinates
-    point = points[i]
-    ax.plot(point[0], point[1], color='green',
-            label='original', marker='o')
-    # Set the x and y axis to display a fixed range
-    ax.set_xlim([0, 5])
-    ax.set_ylim([0, 5])
+
+def point_on_map(map):
+    x=map[:,0]
+    y=map[:,1]
+    img = plt.imread("googlemapp.png")
+    fig, ax = plt.subplots()
+    ax.imshow(img)
+    plt.gca().invert_yaxis()
+    ax.plot(x, y, '.', linewidth=5, color='firebrick')
+    plt.show()
 
 
 def main():
@@ -358,14 +383,11 @@ def main():
         #point = [x, y]
         #points.append(point)
 
-    route = path_planning(2, 5)
-    #points = route.road
-
-    #ani = FuncAnimation(fig, animate, frames=5, interval=500, repeat=False)
-
-
-
-    #plt.show()
+    road=path_planning(0,15)
+    final_road=np.array(road.final_trajectory)
+    initial_road=np.array(road.completed_road)
+    point_on_map(initial_road)
+    point_on_map(final_road)
 
 
 main()
