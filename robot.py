@@ -23,7 +23,8 @@ class Robot:
         self.x_ref = 0
         self.y_ref = 10
         self.theta_ref = 0
-        self.dist_from_ref_point = 40
+        self.dist_from_ref_point = 5
+        self.distance_error_correction = 0
         # Control variables
 
         self.e = 0
@@ -33,7 +34,7 @@ class Robot:
         self.theta_err_der = 0
 
         self.Kv = 10
-        self.Ki = 1
+        self.Ki = 0.01
         self.Kh = 5
         self.Khd = 0.5
 
@@ -50,9 +51,10 @@ class Robot:
         distance_list = np.empty(ref_point_traj.shape[0])
         for i, point in enumerate(ref_point_traj):
             distance_list[i] = dist((self.x, self.y), point)
-        self.ref_point_counter = np.argmin(distance_list)
-        self.ref_point_counter += self.dist_from_ref_point
+        closest_point = np.argmin(distance_list)
+        self.ref_point_counter = closest_point + self.dist_from_ref_point
         self.ref_point_counter = min(self.ref_point_counter, len(ref_point_traj) -1)
+        self.distance_error_correction = dist(ref_point_traj[closest_point],ref_point_traj[self.ref_point_counter])
         self.x_ref = ref_point_traj[self.ref_point_counter][0]
         self.y_ref = ref_point_traj[self.ref_point_counter][1]
         self.theta_ref = atan2((self.y_ref-self.y),(self.x_ref-self.x))
@@ -62,8 +64,8 @@ class Robot:
 
 
     def control_param(self, h):
-        self.e = sqrt((self.x_ref-self.x)**2 + (self.y_ref-self.y)**2) - self.dist_from_ref_point
-        self.e_int +=self.e
+        self.e = sqrt((self.x_ref-self.x)**2 + (self.y_ref-self.y)**2) - self.distance_error_correction/2
+        self.e_int += self.e
 
         past_err = self.theta_err
         self.theta_err = angdiff(self.theta_ref, self.theta)

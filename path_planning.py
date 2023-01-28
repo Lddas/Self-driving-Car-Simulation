@@ -3,10 +3,6 @@ import matplotlib.pyplot as plt
 import math
 from sympy import symbols, Eq, solve
 
-fig, ax = plt.subplots(1, 1)
-fig.set_size_inches(5,5)
-
-
 
 
 class path_planning:
@@ -16,6 +12,7 @@ class path_planning:
            (122.8,718.6), (910.4,701.7), (133.7,893.7), (189.3,893.1),
            (477.9,874.6), (527.5,868.6), (150.1,1128.7), (204.1,1125.5),
            (510,1232.4), (552.6,1226.4),(904.9,1189.8),(936,1159.3)]
+        #self.map = [(x/4,y/4) for (x,y) in self.map]
         #self.g = Graph(5)
         #self.g.graph = [[0, 0, 0, 20, 0, 0, 0],
                         #[0, 0, 20, 0, 15, 0, 0],
@@ -247,7 +244,7 @@ class path_planning:
         if (c1 * d2 - d1 * c2) != 0:
             sol = (1 / (c1 * d2 - d1 * c2)) * C.dot(b)
         else:
-            print("problem")
+            raise("The equation has no solution")
         # sol = np.linalg.solve(A, b)
         sol = [list(x) for x in sol]
         solution = [0, 0]
