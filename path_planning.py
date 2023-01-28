@@ -29,7 +29,7 @@ class path_planning:
         self.complete_road()
         self.final_trajectory = self.final_list_calculator()
 
-    def initial_graph(self):
+    def visibility_graph(self):
         return {
             '0': {'3': math.dist(self.map[0],self.map[3])},
             '1': {'4': math.dist(self.map[1],self.map[4])},
@@ -172,7 +172,7 @@ class path_planning:
         adj_node = {}
         queue = []
         final_path = []
-        graph = self.initial_graph()
+        graph = self.visibility_graph()
 
         for node in graph:
             path[node] = float("inf")
