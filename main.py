@@ -7,8 +7,8 @@ import numpy as np
 from math import cos,sin
 
 #=========USER VARIABLES===============
-STARTING_POINT = 2
-DESTINATION = 19
+STARTING_POINT = 17
+DESTINATION = 14
 TRUE_SIZE = True
 
 
@@ -47,7 +47,7 @@ ref_traj = np.array(road.final_trajectory)
 robot = robot.Robot(h,ref_traj[0][0],ref_traj[0][1])
 img = plt.imread("googlemapp.png")
 shape = img.shape
-img = cv2.resize(img, (int(shape[1]/4), int(shape[0]/4)))
+img = cv2.resize(img, (int(shape[1]/4.6), int(shape[0]/4.6)))
 shape = img.shape
 main_loop(robot)
 anim = FuncAnimation(fig, animate,frames=int(t/h), interval=int(h * 1000), repeat=False)

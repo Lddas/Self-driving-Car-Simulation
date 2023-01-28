@@ -34,7 +34,7 @@ class Robot:
         self.theta_err = 0
         self.theta_err_der = 0
 
-        self.Kv = 30
+        self.Kv = 15
         self.Ki = 0.01
         self.Kh = 2
         self.Khd = 1
