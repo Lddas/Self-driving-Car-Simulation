@@ -73,7 +73,7 @@ class path_planning:
         self.completed_road.append(A)
         B = self.road[1]
         # 20m = max distance for a turn
-        dist_newpoint_B = round(20-0.1 * self.angles[0])
+        dist_newpoint_B = round(5-0.1 * self.angles[0])
         while dist_newpoint_B >= math.dist(A, B):
             dist_newpoint_B -= 0.5
         newpoint = self.computation_position_newpoint(A, B, dist_newpoint_B)
@@ -94,7 +94,7 @@ class path_planning:
                     #entry in the corner
                     A = self.road[i]
                     B = self.road[i+1]
-                    dist_newpoint_B = round(20 - 0.1 * self.angles[i], 2)
+                    dist_newpoint_B = round(5 - 0.1 * self.angles[i], 2)
                     while dist_newpoint_B >= math.dist(A, B):
                         dist_newpoint_B -= 0.5
 

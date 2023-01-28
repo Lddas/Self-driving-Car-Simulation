@@ -6,6 +6,7 @@ from math import cos,sin,atan2,pi,dist,tan,sqrt
 
 class Robot:
     def __init__(self, h, x, y):
+        self.first_iter = True
         self.x = x #Meters
         self.y = y #Meters
         self.theta = pi #Rad
@@ -23,7 +24,7 @@ class Robot:
         self.x_ref = 0
         self.y_ref = 10
         self.theta_ref = 0
-        self.dist_from_ref_point = 5
+        self.dist_from_ref_point = 2
         self.distance_error_correction = 0
         # Control variables
 
@@ -33,14 +34,17 @@ class Robot:
         self.theta_err = 0
         self.theta_err_der = 0
 
-        self.Kv = 10
+        self.Kv = 30
         self.Ki = 0.01
-        self.Kh = 5
-        self.Khd = 0.5
+        self.Kh = 2
+        self.Khd = 1
 
     def kinematics(self, h):
         self.x = self.x + h * cos(self.theta) * self.v
         self.y = self.y + h * sin(self.theta) * self.v
+        if self.first_iter:
+            self.theta = self.theta_ref
+            self.first_iter = False
         self.theta = self.theta + (h * tan(self.phi) * self.v) / self.L
         self.phi = self.phi + self.phi_ * h
         if abs(self.phi) > pi/8:
