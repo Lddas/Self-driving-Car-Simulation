@@ -12,15 +12,7 @@ class path_planning:
            (122.8,718.6), (910.4,701.7), (133.7,893.7), (189.3,893.1),
            (477.9,874.6), (527.5,868.6), (150.1,1128.7), (204.1,1125.5),
            (510,1232.4), (552.6,1226.4),(904.9,1189.8),(936,1159.3)]
-        #self.map = [(x/4,y/4) for (x,y) in self.map]
-        #self.g = Graph(5)
-        #self.g.graph = [[0, 0, 0, 20, 0, 0, 0],
-                        #[0, 0, 20, 0, 15, 0, 0],
-                        #[0, 20, 0, 0, 0, 0, 0],
-                        #[20, 0, 0, 0, 12, 80, 0],
-                        #[0, 15, 0, 12, 0, 0, 30],
-                        #[0, 0, 0, 80, 0, 0, 40],
-                        #[0, 0, 0, 0, 30, 40, 0]]
+        self.map = [(x/4,y/4) for (x,y) in self.map] # Downscale to more realistic dimensions
         self.road = []
         self.completed_road = []
         self.angles = []
@@ -28,7 +20,6 @@ class path_planning:
         self.type_equation = []  #0 if straight, 1 if corner
         self.final_trajectory = []
 
-        #path = np.array(self.g.dijkstra(starting_pt, finishing_pt))
         path = np.array(self.djikstra_algo(starting_pt, finishing_pt))
 
         for i in range(len(path)):
@@ -225,10 +216,6 @@ class path_planning:
         return m_x, m_y, p_x, p_y
 
     def corner_equation(self, cornerlist, point1, point2, point3):
-        #print("P1",point1)
-        #print("P2", point2)
-        #print("P3", point3)
-
         # system of equations
         c1=point1[0] - point3[0]
         c2=point1[1] - point3[1]
@@ -285,15 +272,6 @@ class path_planning:
             else:
                 theta=theta1+theta2
 
-        #theta=(theta1 - theta2) % (2 * math.pi)
-        #while theta > math.pi:
-            #theta -= 2 * math.pi
-
-
-
-        #print("theta1",theta1)
-        #print("theta2", theta2)
-        #print("theta", theta)
         for j in range(1, 11):  # 10 points par virage, à modifier
             t = j * theta / 10 + theta1
 
@@ -349,19 +327,4 @@ def point_on_map(map):
     plt.gca().invert_yaxis()
     ax.plot(x, y, '.', linewidth=5, color='firebrick')
     plt.show()
-
-
-def main():
-
-    #for i in range(int(t/h)):
-        #x, y, theta, phi = car.coord_computation()
-        #point = [x, y]
-        #points.append(point)
-
-    road=path_planning(0,19)
-    final_road=np.array(road.final_trajectory)
-    initial_road=np.array(road.completed_road)
-    point_on_map(initial_road)
-    point_on_map(final_road)
-
 

@@ -71,9 +71,13 @@ class Robot:
         self.theta_err = angdiff(self.theta_ref, self.theta)
         self.theta_err_der = (self.theta_err - past_err)/h
 
-    def set_new_param(self):
+    def set_new_param(self, ref_traj):
         self.v = self.Kv * self.e + self.Ki * self.e_int
         self.phi_ = self.Kh * self.theta_err + self.Khd * self.theta_err_der
+
+        #Stop the car at destination
+        if dist((self.x,self.y), ref_traj[-1]) < 3:
+            self.v = 0
 
 
 def sign(x):
