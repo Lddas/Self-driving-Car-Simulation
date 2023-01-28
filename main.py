@@ -1,92 +1,54 @@
-import numpy as np
-from math import *
 import matplotlib.pyplot as plt
 from matplotlib.animation import FuncAnimation
+import robot
+import path_planning
+import numpy as np
+from math import *
 
 
+fig, ax = plt.subplots(1, 1)
+fig.set_size_inches(5,5)
+
+h = 0.01      #seconds/iteration
+t = 15     #seconds
+points = []
+#road = path_planning.path_planning(0, 19)
+#ref_traj = np.array(road.final_trajectory)
+#np.save("road", ref_traj)
+ref_traj = np.load("road.npy", allow_pickle = True)
+robot = robot.Robot(h,ref_traj[0][0],ref_traj[0][1])
+"""ref_traj_1 = np.stack((np.arange(0, 50, 1), np.ones((50)) * 10), axis = -1)
+ref_traj_2 = np.stack((np.ones((10)) * 50, np.arange(10, 20, 1)), axis = -1)
+ref_traj_3 = np.stack((np.arange(50, 70, 1), np.ones((20)) * 20), axis = -1)
+ref_traj = np.concatenate((ref_traj_1, ref_traj_2,ref_traj_3))
+print(t)"""
+img = plt.imread("googlemapp.png")
 
 
-class Robot:
-    def __init__(self, h):
-        self.x = 0 #Meters
-        self.y = 3 #Meters
-        self.theta = 0 #Rad
-        self.phi = 0  #Rad
-        self.v = 5 #Meters/s
-        self.L = 2.46 # Meters
-        self.omega = 0
-        self.omega_s = 0
-        # Derivatives are indicated with an extra "_"
-
-        self.theta_ = 0
-        self.phi_ = 0
-        # Reference points
-
-        self.x_ref = 40
-        self.y_ref = 40
-        self.theta_ref = pi/4
-        # Control variables
-
-        self.b_e = 0
-
-        self.K_v = 3
-        self.K_s = 100
-        self.K_l = 1
-
-    def kinematics(self, h):
-        self.x = self.x + h * cos(self.theta) * self.v
-        self.y = self.y + h * sin(self.theta) * self.v
-        self.theta = self.theta + (h * tan(self.phi) * self.v) / self.L
-        self.phi = self.phi + self.phi_ * h
-        if abs(self.phi) > pi/8:
-            self.phi = sign(self.phi)* pi/4
-
-        """derivs = np.array([self.x_, self.y_, self.theta_, self.phi_])
-        A = np.array([cos(self.theta),      0],
-                     [sin(self.theta),      0],
-                     [tan(self.phi/self.L), 0],
-                     [0,                    1])
-        phys_param = np.array([self.v, self.omega_s])
-
-        derivs = A.dot(phys_param)
-
-        np.array([self.x, self.y, self.theta, self.phi]) ="""
-        return
-
-    def control_param(self):
-        w_e = np.array(([self.x_ref - self.x, self.y_ref-self.y, self.theta_ref-self.theta]))
-        A = np.array(([cos(self.theta),  sin(self.theta_),  0],
-                       [-sin(self.theta), cos(self.theta),   0],
-                       [0,                       0,          1]))
-        self.b_e = np.dot(A,w_e)
-
-    def set_new_param(self):
-        self.v = self.K_v * self.b_e[0]
-        self.phi_ = self.K_s * self.b_e[2] + self.K_l*self.b_e[1]
-
-def sign(x):
-    if x > 0:
-        return 1
-    elif x < 0 :
-        return -1
-    else:
-        return 0
-
-
-"""#Main loop:
 def main_loop(robot):
-    robot.kinematics()
-    robot.control_param()
-    robot.set_new_param()
-    return robot.x, robot.y
+    for i in range(int(t/h)):
+        robot.kinematics(h)
+        robot.find_initial_ref_point(ref_traj)
+        robot.control_param(h)
+        robot.set_new_param()
+        points.append((robot.x,robot.y,robot.theta, robot.x_ref,robot.y_ref))
 
-"""
 
-"""while True:
-    robot.kinematics()
-    robot.control_param()
-    robot.set_new_param()
-    point = [robot.x, robot.y]
-    points.append(point)
-    render.animate(i,h,t)
-    i += 1"""
+def animate(i):
+    ax.clear()
+    ax.imshow(img)
+    point = points[i]
+    ax.plot(point[0], point[1], color='green',label='original', marker='o')
+    #ax.plot(ref_traj[:,0],ref_traj[:,1], color='blue',label='original', marker='o')
+    ax.plot(point[3], point[4], color='red',label='original', marker='o')
+    ax.arrow(point[0]- 0.5 * robot.L * cos(point[2]), point[1] - 0.5 * robot.L * sin(point[2]),
+              robot.L * cos(point[2]), robot.L * sin(point[2]))
+
+    ax.set_xlim([0, 1250])
+    ax.set_ylim([0, 1100])
+
+main_loop(robot)
+anim = FuncAnimation(fig, animate,frames=int(t/h), interval=int(h * 1000), repeat=False)
+# Save the animation as an animated GIF
+#anim.save("simple_animation.gif", dpi = 300, writer=PillowWriter(fps=int(1/h)))
+plt.show()
