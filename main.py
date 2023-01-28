@@ -17,7 +17,7 @@ def main_loop(robot):
     for i in range(int(t/h)):
         robot.find_initial_ref_point(ref_traj)
         robot.control_param(h)
-        robot.set_new_param(ref_traj)
+        robot.set_new_param(ref_traj, h)
         robot.kinematics(h)
         points.append((robot.x,robot.y,robot.theta, robot.x_ref,robot.y_ref))
 
@@ -51,4 +51,5 @@ img = cv2.resize(img, (int(shape[1]/4.6), int(shape[0]/4.6)))
 shape = img.shape
 main_loop(robot)
 anim = FuncAnimation(fig, animate,frames=int(t/h), interval=int(h * 1000), repeat=False)
+print(robot.energy_spent)
 plt.show()

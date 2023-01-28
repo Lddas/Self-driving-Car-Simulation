@@ -12,9 +12,14 @@ class Robot:
         self.theta = pi #Rad
         self.phi = 0  #Rad
         self.v = 1 #Meters/s
+        self.v_ = 0
         self.L = 2.46 # Meters
         self.omega = 0
         self.omega_s = 0
+        self.p0 = 1
+        self.M = 1190
+        self.energy_spent = 0
+
         # Derivatives are indicated with an extra "_"
 
         self.theta_ = 0
@@ -50,6 +55,7 @@ class Robot:
         if abs(self.phi) > pi/8:
             self.phi = sign(self.phi) * pi/8
 
+
     # Finds the closest point to the robot and chooses a few points ahead for the reference points
     def find_initial_ref_point(self, ref_point_traj):
         distance_list = np.empty(ref_point_traj.shape[0])
@@ -75,9 +81,13 @@ class Robot:
         self.theta_err = angdiff(self.theta_ref, self.theta)
         self.theta_err_der = (self.theta_err - past_err)/h
 
-    def set_new_param(self, ref_traj):
+    def set_new_param(self, ref_traj, h):
+        old_v = self.v
         self.v = self.Kv * self.e + self.Ki * self.e_int
         self.phi_ = self.Kh * self.theta_err + self.Khd * self.theta_err_der
+        if not self.first_iter:
+            self.v_ = (self.v - old_v) / h
+        self.energy_spent += (self.M * self.v * self.v_ + self.p0) * h
 
         #Stop the car at destination
         if dist((self.x,self.y), ref_traj[-1]) < 3:

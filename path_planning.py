@@ -232,12 +232,10 @@ class path_planning:
             sol = (1 / (c1 * d2 - d1 * c2)) * C.dot(b)
         else:
             raise("The equation has no solution")
-        # sol = np.linalg.solve(A, b)
         sol = [list(x) for x in sol]
         solution = [0, 0]
         solution[0] = round(sol[0][0], 2)
         solution[1] = round(sol[1][0], 2)
-        #print("P0",solution)
         r = math.dist(solution, point1)  # sortir les valeurs calculées
 
         # Calcul angles de depart, d'arrivée, et angle de l'arc
